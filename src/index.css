@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --auditory: #3B82F6;
+  --wernicke: #10B981;
+  --broca: #F59E0B;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: #080808;
+  color: rgba(255,255,255,0.85);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 200;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+}
+
+/* Sidebar stat labels */
+.stat-label {
+  @apply text-[9px] tracking-[0.22em] uppercase text-white/25 font-light;
+}
+
+/* Scrollbar for sidebar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
