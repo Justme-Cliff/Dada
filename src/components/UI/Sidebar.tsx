@@ -40,9 +40,9 @@ export default function Sidebar() {
           >
             {/* Solid panel — no transparency bleed */}
             <div
-              className="h-full px-6 pt-16 pb-12 flex flex-col"
+              className="min-h-full px-6 pt-16 pb-12 flex flex-col"
               style={{
-                background: 'linear-gradient(180deg, #0f0d22 0%, #0b0a1c 60%, #080816 100%)',
+                background: '#0e0c1f',
                 borderLeft: '1px solid rgba(139,92,246,0.18)',
                 boxShadow: '-24px 0 80px rgba(99,102,241,0.07), inset 1px 0 0 rgba(255,255,255,0.04)',
               }}
@@ -66,9 +66,9 @@ export default function Sidebar() {
             transition={{ type: 'spring', stiffness: 320, damping: 38 }}
           >
             <div
-              className="px-6 pt-4 pb-12"
+              className="min-h-full px-6 pt-4 pb-12"
               style={{
-                background: 'linear-gradient(180deg, #0f0d22 0%, #0b0a1c 100%)',
+                background: '#0e0c1f',
                 borderTop: '1px solid rgba(139,92,246,0.18)',
                 boxShadow: '0 -24px 80px rgba(99,102,241,0.08)',
               }}
