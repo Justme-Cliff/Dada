@@ -10,6 +10,26 @@ function getTopWords(wordFreq: Record<string, number>, n = 6) {
     .slice(0, n)
 }
 
+/** Thin gradient divider between sections */
+function Divider() {
+  return (
+    <div
+      className="my-5 h-px w-full"
+      style={{ background: 'linear-gradient(90deg, transparent, rgba(139,92,246,0.15) 40%, rgba(99,102,241,0.12) 60%, transparent)' }}
+    />
+  )
+}
+
+/** Section label with a tiny left accent bar */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <span className="w-0.5 h-3 rounded-full bg-white/20" />
+      <span className="text-[9px] tracking-[0.26em] uppercase text-white/40 font-light">{children}</span>
+    </div>
+  )
+}
+
 function Bar({
   value,
   color,
@@ -22,15 +42,15 @@ function Bar({
   glow?: boolean
 }) {
   return (
-    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden relative">
+    <div className="h-[3px] w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
       <motion.div
         className="h-full rounded-full"
         style={{
           backgroundColor: color,
-          boxShadow: glow && value > 0.1 ? `0 0 6px ${color}` : 'none',
+          boxShadow: glow && value > 0.1 ? `0 0 8px ${color}88` : 'none',
         }}
         animate={{ width: `${Math.round(Math.min(value, 1) * 100)}%` }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
       />
       {pulse && value > 0.05 && (
         <motion.div
@@ -45,39 +65,47 @@ function Bar({
 }
 
 function RadialGauge({ value, color }: { value: number; color: string }) {
-  const r    = 30
+  const r    = 32
   const circ = 2 * Math.PI * r
   const dash = (Math.min(value, 100) / 100) * circ
+  const isHigh = value > 60
   return (
-    <div className="relative w-20 h-20 flex items-center justify-center">
-      <svg width="80" height="80" className="-rotate-90">
-        <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+    <div className="relative w-[84px] h-[84px] flex items-center justify-center">
+      {/* Outer glow when high */}
+      {isHigh && (
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{ boxShadow: `0 0 24px ${color}33` }}
+        />
+      )}
+      <svg width="84" height="84" className="-rotate-90">
+        <circle cx="42" cy="42" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3.5" />
         <motion.circle
-          cx="40" cy="40" r={r}
+          cx="42" cy="42" r={r}
           fill="none"
           stroke={color}
-          strokeWidth="3"
+          strokeWidth="3.5"
           strokeLinecap="round"
           strokeDasharray={`${circ}`}
           animate={{ strokeDashoffset: circ - dash }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          style={{ filter: value > 10 ? `drop-shadow(0 0 4px ${color})` : 'none' }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
+          style={{ filter: value > 10 ? `drop-shadow(0 0 5px ${color}99)` : 'none' }}
         />
       </svg>
       <div className="absolute text-center">
-        <div className="text-base font-light tabular-nums" style={{ color }}>
+        <div className="text-xl font-light tabular-nums" style={{ color, letterSpacing: '-0.02em' }}>
           {Math.round(value)}
         </div>
-        <div className="text-[9px] tracking-widest uppercase text-white/25">%</div>
+        <div className="text-[8px] tracking-widest uppercase text-white/25 -mt-0.5">%</div>
       </div>
     </div>
   )
 }
 
-/** Stage indicator — 4 dots that light up as development progresses */
+/** Stage dots */
 function StageDots({ stage }: { stage: number }) {
   return (
-    <div className="flex gap-1.5 items-center">
+    <div className="flex gap-2 items-center">
       {[0, 1, 2, 3].map((s) => (
         <motion.div
           key={s}
@@ -86,9 +114,11 @@ function StageDots({ stage }: { stage: number }) {
             backgroundColor:
               s < stage   ? '#10B981'
               : s === stage ? '#F59E0B'
-              : 'rgba(255,255,255,0.08)',
+              : 'rgba(255,255,255,0.1)',
             boxShadow:
-              s === stage ? '0 0 6px #F59E0B' : 'none',
+              s < stage   ? '0 0 4px #10B98188'
+              : s === stage ? '0 0 6px #F59E0B'
+              : 'none',
           }}
           transition={{ duration: 0.5 }}
         />
@@ -102,128 +132,127 @@ export default function StatsPanel() {
   const activation = useBrainStore((s) => s.activation)
   const topClusters = getTopClusters(model, 5)
 
-  // Derived stats
-  const acquiredClusters = model.clusterFreq.filter((c) => c >= 25).length
+  const acquiredClusters = model.clusterFreq.filter((c) => c >= 10).length
   const maxFreq          = Math.max(...model.clusterFreq)
-  const freqProgress     = Math.min(maxFreq / 250, 1)
+  const freqProgress     = Math.min(maxFreq / 50, 1)
   const brainAgePercent  = Math.round(model.brainAge * 100)
 
   return (
-    <div className="flex flex-col gap-5 p-1">
+    <div className="flex flex-col">
 
-      {/* Developmental stage */}
+      {/* ── Developmental stage ── */}
       <section>
-        <label className="stat-label">Development</label>
-        <div className="mt-2.5 flex items-center justify-between">
-          <span className="text-[10px] text-white/40 tracking-wide">
+        <SectionLabel>Development</SectionLabel>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[11px] text-white/55 tracking-wide">
             {STAGE_LABELS[model.developmentStage]}
           </span>
           <StageDots stage={model.developmentStage} />
         </div>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-[10px] text-white/25 w-16">Brain age</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-white/30 w-16 shrink-0">Brain age</span>
           <div className="flex-1">
             <Bar value={model.brainAge} color="#a78bfa" glow={model.brainAge > 0.3} />
           </div>
-          <span className="text-[9px] tabular-nums text-white/20 w-6">{brainAgePercent}</span>
+          <span className="text-[10px] tabular-nums text-white/35 w-7 text-right">{brainAgePercent}</span>
         </div>
       </section>
 
-      <div className="border-t border-white/[0.04]" />
+      <Divider />
 
-      {/* Live activation */}
+      {/* ── Live activation ── */}
       <section>
-        <label className="stat-label">Region Activation</label>
-        <div className="mt-2.5 flex flex-col gap-2">
+        <SectionLabel>Region Activation</SectionLabel>
+        <div className="flex flex-col gap-3">
           {[
             { label: 'Auditory', val: activation.auditory, color: '#3B82F6' },
             { label: 'Wernicke', val: activation.wernicke, color: '#10B981' },
-            { label: "Broca's", val: activation.broca,     color: '#F59E0B' },
+            { label: "Broca's",  val: activation.broca,    color: '#F59E0B' },
           ].map(({ label, val, color }) => (
-            <div key={label} className="flex items-center gap-2">
-              <span className="text-[10px] text-white/25 w-16">{label}</span>
-              <div className="flex-1"><Bar value={val} color={color} pulse={val > 0.1} /></div>
-              <span className="text-[9px] tabular-nums text-white/20 w-6">{Math.round(val * 100)}</span>
+            <div key={label} className="flex items-center gap-3">
+              <span className="text-[10px] text-white/30 w-16 shrink-0">{label}</span>
+              <div className="flex-1 relative"><Bar value={val} color={color} pulse={val > 0.1} /></div>
+              <span className="text-[10px] tabular-nums text-white/35 w-7 text-right">{Math.round(val * 100)}</span>
             </div>
           ))}
         </div>
       </section>
 
-      <div className="border-t border-white/[0.04]" />
+      <Divider />
 
-      {/* Training progress */}
+      {/* ── Phoneme learning ── */}
       <section>
-        <label className="stat-label">Phoneme Learning</label>
-        <div className="mt-2.5 flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-white/25 w-16">Exposure</span>
+        <SectionLabel>Phoneme Learning</SectionLabel>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-white/30 w-16 shrink-0">Exposure</span>
             <div className="flex-1"><Bar value={freqProgress} color="#8B5CF6" /></div>
-            <span className="text-[9px] tabular-nums text-white/20 w-6">{Math.round(freqProgress * 100)}</span>
+            <span className="text-[10px] tabular-nums text-white/35 w-7 text-right">{Math.round(freqProgress * 100)}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-white/25 w-16">Sessions</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-white/30 w-16 shrink-0">Sessions</span>
             <div className="flex-1">
-              <Bar value={Math.min(model.totalUtterances / 50, 1)} color="#EC4899" />
+              <Bar value={Math.min(model.totalUtterances / 15, 1)} color="#EC4899" />
             </div>
-            <span className="text-[9px] tabular-nums text-white/20 w-6">{model.totalUtterances}</span>
+            <span className="text-[10px] tabular-nums text-white/35 w-7 text-right">{model.totalUtterances}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-white/25 w-16">Inventory</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-white/30 w-16 shrink-0">Inventory</span>
             <div className="flex-1">
-              <Bar value={Math.min(acquiredClusters / 4, 1)} color="#06B6D4" />
+              <Bar value={Math.min(acquiredClusters / 2, 1)} color="#06B6D4" />
             </div>
-            <span className="text-[9px] tabular-nums text-white/20 w-6">{acquiredClusters}</span>
+            <span className="text-[10px] tabular-nums text-white/35 w-7 text-right">{acquiredClusters}</span>
           </div>
         </div>
       </section>
 
-      <div className="border-t border-white/[0.04]" />
+      <Divider />
 
-      {/* Pathway strength */}
+      {/* ── Neural pathways ── */}
       <section>
-        <label className="stat-label">Neural Pathways</label>
-        <div className="mt-2.5 flex flex-col gap-2">
+        <SectionLabel>Neural Pathways</SectionLabel>
+        <div className="flex flex-col gap-3">
           {[
             { label: 'Aud → Wer', val: model.pathwayStrength[0], color: '#3B82F6' },
             { label: 'Wer → Bro', val: model.pathwayStrength[1], color: '#10B981' },
             { label: 'Aud → Bro', val: model.pathwayStrength[2], color: '#F59E0B' },
           ].map(({ label, val, color }) => (
-            <div key={label} className="flex items-center gap-2">
-              <span className="text-[10px] text-white/25 w-16">{label}</span>
+            <div key={label} className="flex items-center gap-3">
+              <span className="text-[10px] text-white/30 w-16 shrink-0">{label}</span>
               <div className="flex-1"><Bar value={val} color={color} glow={val > 0.3} /></div>
             </div>
           ))}
         </div>
       </section>
 
-      <div className="border-t border-white/[0.04]" />
+      <Divider />
 
-      {/* Words heard */}
+      {/* ── Words heard ── */}
       <section>
-        <label className="stat-label">Words Heard</label>
-        <div className="mt-2 flex flex-col gap-1.5">
+        <SectionLabel>Words Heard</SectionLabel>
+        <div className="flex flex-col gap-2">
           {(() => {
             const words    = getTopWords(model.wordFreq)
             const maxCount = words[0]?.count ?? 1
             if (words.length === 0) {
               return (
-                <p className="text-[10px] text-white/15 italic">Speak to begin learning</p>
+                <p className="text-[10px] text-white/20 italic pl-3">Speak to begin learning</p>
               )
             }
             return words.map((w, i) => (
-              <div key={w.word} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-white/15 w-2.5">{i + 1}</span>
-                  <span className="text-xs text-white/60 font-light tracking-wide">{w.word}</span>
+              <div key={w.word} className="flex items-center justify-between group">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[9px] text-white/20 w-3">{i + 1}</span>
+                  <span className="text-[11px] text-white/65 font-light tracking-wide">{w.word}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-14 h-0.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="w-14 h-[2px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
                     <div
-                      className="h-full rounded-full bg-white/30"
-                      style={{ width: `${(w.count / maxCount) * 100}%` }}
+                      className="h-full rounded-full"
+                      style={{ width: `${(w.count / maxCount) * 100}%`, background: 'rgba(255,255,255,0.35)' }}
                     />
                   </div>
-                  <span className="text-[10px] tabular-nums text-white/30 w-8 text-right">×{w.count}</span>
+                  <span className="text-[10px] tabular-nums text-white/35 w-8 text-right">×{w.count}</span>
                 </div>
               </div>
             ))
@@ -231,70 +260,74 @@ export default function StatsPanel() {
         </div>
       </section>
 
-      {/* Acoustic patterns */}
-      <section>
-        <label className="stat-label">Acoustic Patterns</label>
-        <div className="mt-2 flex flex-col gap-1.5">
-          {topClusters.filter((c) => c.count > 0).slice(0, 4).map((c, i) => (
-            <div key={c.id} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] text-white/15 w-2.5">{i + 1}</span>
-                <span className="text-[10px] font-mono text-white/35">/{c.syllable}/</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Recency bar (how fresh this pattern is) */}
-                <div className="w-8 h-0.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-amber-400/40"
-                    style={{ width: `${Math.min(c.recency * 100 * 8, 100)}%` }}
-                  />
+      {/* ── Acoustic patterns ── */}
+      {topClusters.some((c) => c.count > 0) && (
+        <>
+          <Divider />
+          <section>
+            <SectionLabel>Acoustic Patterns</SectionLabel>
+            <div className="flex flex-col gap-2">
+              {topClusters.filter((c) => c.count > 0).slice(0, 4).map((c, i) => (
+                <div key={c.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[9px] text-white/20 w-3">{i + 1}</span>
+                    <span className="text-[10px] font-mono text-white/45 tracking-wider">/{c.syllable}/</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-[2px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${Math.min(c.recency * 100 * 8, 100)}%`, background: 'rgba(251,191,36,0.5)' }}
+                      />
+                    </div>
+                    <div className="w-14 h-[2px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${Math.min((c.count / Math.max(maxFreq, 1)) * 100, 100)}%`, background: 'rgba(255,255,255,0.25)' }}
+                      />
+                    </div>
+                    <span className="text-[9px] tabular-nums text-white/25 w-10 text-right">×{c.count}</span>
+                  </div>
                 </div>
-                <div className="w-14 h-0.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-white/15"
-                    style={{ width: `${Math.min((c.count / Math.max(maxFreq, 1)) * 100, 100)}%` }}
-                  />
-                </div>
-                <span className="text-[9px] tabular-nums text-white/20 w-10 text-right">×{c.count}</span>
-              </div>
+              ))}
             </div>
-          ))}
-          {topClusters.every((c) => c.count === 0) && (
-            <p className="text-[10px] text-white/15 italic">No patterns yet</p>
+          </section>
+        </>
+      )}
+
+      <Divider />
+
+      {/* ── First word readiness ── */}
+      <section>
+        <SectionLabel>First Word Readiness</SectionLabel>
+        <div className="flex flex-col items-center gap-3 pt-1">
+          <RadialGauge value={model.readinessScore} color="#F59E0B" />
+
+          {model.readinessScore > 5 && !model.firstWordSpoken && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-[10px] text-white/30 tracking-wider"
+            >
+              {model.readinessScore < 25  ? 'listening…'
+                : model.readinessScore < 50 ? 'patterns forming…'
+                : model.readinessScore < 75 ? 'sequences stabilising…'
+                : model.readinessScore < 90 ? 'almost there…'
+                : 'nearly ready…'}
+            </motion.p>
+          )}
+
+          {model.firstWordSpoken && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center"
+            >
+              <p className="text-xs text-amber-400/70 tracking-wider">"{model.firstWord}"</p>
+              <p className="text-[9px] text-white/20 mt-1 tracking-widest uppercase">first word spoken</p>
+            </motion.div>
           )}
         </div>
-      </section>
-
-      <div className="border-t border-white/[0.04]" />
-
-      {/* First word readiness gauge */}
-      <section>
-        <label className="stat-label">First Word Readiness</label>
-        <div className="mt-3 flex justify-center">
-          <RadialGauge value={model.readinessScore} color="#F59E0B" />
-        </div>
-        {model.readinessScore > 5 && !model.firstWordSpoken && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-2 text-center text-[10px] text-white/20 tracking-wider"
-          >
-            {model.readinessScore < 25  ? 'listening…'
-              : model.readinessScore < 50 ? 'patterns forming…'
-              : model.readinessScore < 75 ? 'sequences stabilising…'
-              : model.readinessScore < 90 ? 'almost there…'
-              : 'nearly ready…'}
-          </motion.p>
-        )}
-        {model.firstWordSpoken && (
-          <motion.p
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-2 text-center text-xs text-amber-400/60 tracking-wider"
-          >
-            "{model.firstWord}"
-          </motion.p>
-        )}
       </section>
 
     </div>
