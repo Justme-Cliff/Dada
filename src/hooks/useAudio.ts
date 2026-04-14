@@ -17,9 +17,9 @@ import { extractMFCCs, computeRMS } from '../audio/mfcc'
 import { useBrainStore } from '../store/brainStore'
 
 const SAMPLE_RATE      = 44100
-const VAD_THRESHOLD    = 0.007   // RMS level that counts as speech
+const VAD_THRESHOLD    = 0.003   // RMS level that counts as speech
 const SILENCE_MS       = 900     // ms of silence before utterance is flushed
-const MIN_UTTERANCE_MS = 300     // ignore very short noise bursts
+const MIN_UTTERANCE_MS = 200     // ignore very short noise bursts
 const BLOCK_SIZE       = 2048    // samples per processing block
 
 export function useAudio(onUtterance: (frames: number[][], rms: number) => void) {
@@ -40,6 +40,9 @@ export function useAudio(onUtterance: (frames: number[][], rms: number) => void)
 
   const activeRef      = useRef(false)
   const setActivation  = useBrainStore((s) => s.setActivation)
+
+  // Ref so processBlock always calls the latest flushUtterance (avoids stale closure)
+  const flushUtteranceRef = useRef<(() => void) | null>(null)
 
   // ── VAD processing — shared between worklet and ScriptProcessor paths ──────
   const processBlock = useCallback((buffer: Float32Array) => {
@@ -63,11 +66,11 @@ export function useAudio(onUtterance: (frames: number[][], rms: number) => void)
     } else if (isSpeakingRef.current && !silenceTimerRef.current) {
       silenceTimerRef.current = setTimeout(() => {
         silenceTimerRef.current = null
-        flushUtterance()
+        flushUtteranceRef.current?.()
         setActivation({ auditory: 0 })
       }, SILENCE_MS)
     }
-  }, [setActivation]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setActivation])
 
   const flushUtterance = useCallback(() => {
     const frames    = utteranceFramesRef.current
@@ -76,10 +79,12 @@ export function useAudio(onUtterance: (frames: number[][], rms: number) => void)
     utteranceRmsRef.current    = []
     isSpeakingRef.current      = false
 
-    if (frames.length === 0) return
-
     const duration = Date.now() - speechStartTimeRef.current
-    if (duration < MIN_UTTERANCE_MS) return
+    if (frames.length === 0 || duration < MIN_UTTERANCE_MS) {
+      // Still count the session even if frames are empty (updates utterance stats)
+      onUtterance([], 0)
+      return
+    }
 
     const avgRms = rmsValues.length > 0
       ? rmsValues.reduce((a, b) => a + b, 0) / rmsValues.length
@@ -91,6 +96,9 @@ export function useAudio(onUtterance: (frames: number[][], rms: number) => void)
       setActivation({ isProcessing: false })
     }, 30)
   }, [onUtterance, setActivation])
+
+  // Keep ref in sync so processBlock always calls the latest version
+  flushUtteranceRef.current = flushUtterance
 
   // ── Init AudioContext (must be inside a user-gesture handler) ──────────────
   const initAudio = useCallback(async () => {

@@ -24,7 +24,7 @@ export default function MicButton({ onStart, onStop }: MicButtonProps) {
   }, [isListening, onStart, onStop])
 
   return (
-    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-3">
 
       {/* Status label */}
       <AnimatePresence mode="wait">

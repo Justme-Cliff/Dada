@@ -30,10 +30,10 @@ import type { ModelState, DevelopmentStage } from '../store/brainStore'
 const STAGE_THRESHOLDS: [number, number, number, number] = [0, 30, 100, 200]
 
 // ── Readiness gate values (all must be satisfied for first-word) ──────────────
-const CLUSTER_FREQ_THRESHOLD = 250    // top cluster lifetime frame count
-const MIN_UTTERANCES         = 50     // minimum speaking sessions
-const CONSISTENCY_GATE       = 0.45   // bigram entropy reduction required
-const MIN_VOCABULARY         = 4      // clusters heard ≥ 25 times
+const CLUSTER_FREQ_THRESHOLD = 50     // top cluster lifetime frame count
+const MIN_UTTERANCES         = 15     // minimum speaking sessions
+const CONSISTENCY_GATE       = 0.70   // bigram entropy reduction required
+const MIN_VOCABULARY         = 2      // clusters heard ≥ 10 times
 
 // ── Recency decay — how quickly old patterns fade (per utterance) ─────────────
 // α close to 1 = slow decay (long memory); close to 0 = fast decay
@@ -74,7 +74,19 @@ export function processUtterance(
   model: ModelState,
 ): UtteranceResult {
   if (frames.length === 0) {
-    return { model, activation: { auditory: rms, wernicke: 0, broca: 0 }, topClusterId: 0, rms }
+    // Still count the session — utteranceScore should grow with each listen event
+    const totalUtterances = model.totalUtterances + 1
+    const utteranceScore  = Math.min(totalUtterances / MIN_UTTERANCES, 1.0)
+    const readinessScore  = Math.min(
+      model.readinessScore + utteranceScore * 0.10 * 100 * 0.05,
+      model.readinessScore + 0.5,  // cap increment per empty session
+    )
+    return {
+      model: { ...model, totalUtterances, readinessScore },
+      activation: { auditory: rms, wernicke: 0, broca: 0 },
+      topClusterId: 0,
+      rms,
+    }
   }
 
   // ── k-means assignment + online codebook update ────────────────────────────
@@ -142,11 +154,11 @@ export function processUtterance(
   }
   const maxEntropy      = Math.log2(K)
   const normEntropy     = topRowTotal > 0 ? rawEntropy / maxEntropy : 1
-  const consistencyScore = Math.max(1 - normEntropy / (1 - CONSISTENCY_GATE), 0)
+  const consistencyScore = Math.max((CONSISTENCY_GATE - normEntropy) / CONSISTENCY_GATE, 0)
 
   // 3. Vocabulary breadth — how many distinct phoneme prototypes are acquired?
   //    (Werker-style phoneme inventory narrowing)
-  const acquiredClusters = clusterFreq.filter((c) => c >= 25).length
+  const acquiredClusters = clusterFreq.filter((c) => c >= 10).length
   const vocabularyScore  = Math.min(acquiredClusters / MIN_VOCABULARY, 1.0)
 
   // 4. Session count gate

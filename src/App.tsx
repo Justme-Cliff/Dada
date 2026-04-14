@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import BrainScene from './components/Brain/BrainScene'
 import MicButton from './components/UI/MicButton'
+import BabyVoiceButton from './components/UI/BabyVoiceButton'
 import Sidebar from './components/UI/Sidebar'
 import SidebarToggle from './components/UI/SidebarToggle'
 import FirstWordOverlay from './components/FirstWordOverlay'
@@ -66,7 +67,13 @@ export default function App() {
 
       <SidebarToggle />
       <Sidebar />
-      <MicButton onStart={handleStart} onStop={handleStop} />
+
+      {/* Bottom controls: mic + baby voice side by side */}
+      <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-20 flex items-end gap-8">
+        <MicButton onStart={handleStart} onStop={handleStop} />
+        <BabyVoiceButton />
+      </div>
+
       <FirstWordOverlay />
     </div>
   )
