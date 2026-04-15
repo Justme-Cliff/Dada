@@ -28,6 +28,11 @@ export default function BabyVoiceButton() {
   return (
     <div className="flex flex-col items-center gap-2">
 
+      {/* Label */}
+      <span className="text-[9px] tracking-[0.2em] uppercase text-white/20 font-light">
+        baby speak
+      </span>
+
       {/* Current word the baby is trying to say */}
       <AnimatePresence mode="wait">
         <motion.span
@@ -125,11 +130,6 @@ export default function BabyVoiceButton() {
           </motion.svg>
         </motion.div>
       </motion.button>
-
-      {/* Label */}
-      <span className="text-[9px] tracking-[0.2em] uppercase text-white/20 font-light">
-        baby speak
-      </span>
     </div>
   )
 }
