@@ -3,6 +3,7 @@ import { useBrainStore } from '../store/brainStore'
 import { processUtterance, createInitialModel } from '../model/learningModel'
 import { saveModel, loadModel } from '../model/persistence'
 import { WordTracker } from '../audio/wordTracker'
+import { babyApproximate } from '../audio/babyPhonology'
 
 export function useLearningModel() {
   const { model, setModel, setActivation, setFirstWordOverlay } = useBrainStore()
@@ -58,15 +59,17 @@ export function useLearningModel() {
 
       const result = processUtterance(frames, rms, { ...current, wordFreq: mergedWordFreq })
 
-      // Determine the first word:
-      //  1. If SpeechRecognition picked up a dominant word → use it (it's a real word they said)
-      //  2. Otherwise fall back to the syllable babble
+      // Determine what the baby is trying to say:
+      //  1. Already spoken first word → keep it
+      //  2. A real word heard 3+ times → baby approximates it phonetically
+      //     e.g. "hello" → "heh-oh", "mama" → "mah-mah", "bottle" → "bah-doh"
+      //  3. Otherwise → babble derived from centroid acoustic features
       const topWord = trackerRef.current?.getTopWord()
       const firstWord = result.model.firstWordSpoken
         ? result.model.firstWord
-        : topWord && topWord.count >= 5
-          ? topWord.word                        // real word heard enough times
-          : result.model.firstWord              // babble fallback
+        : topWord && topWord.count >= 3
+          ? babyApproximate(topWord.word, result.model.developmentStage)
+          : result.model.firstWord              // acoustic babble fallback
 
       const updatedModel = {
         ...result.model,

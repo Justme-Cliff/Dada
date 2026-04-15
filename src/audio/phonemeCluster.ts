@@ -122,10 +122,3 @@ export function resetFrameCounter(): void {
   totalFramesProcessed = 0
 }
 
-/** Babble syllable map: cluster ID → child-like syllable */
-export const BABBLE_MAP: Record<number, string> = {
-  0: 'da', 1: 'ba', 2: 'ma', 3: 'na', 4: 'pa',
-  5: 'ta', 6: 'wa', 7: 'la', 8: 'ga', 9: 'ka',
-  10: 'de', 11: 'be', 12: 'me', 13: 'ne', 14: 'pe',
-  15: 'do', 16: 'bo', 17: 'mo', 18: 'no', 19: 'po',
-}

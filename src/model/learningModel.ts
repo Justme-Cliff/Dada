@@ -23,7 +23,8 @@
  *   3  First word (200+ & readiness ≥ 95)   pattern crystallises into output
  */
 
-import { K, processFrames, initCodebook, BABBLE_MAP } from '../audio/phonemeCluster'
+import { K, processFrames, initCodebook } from '../audio/phonemeCluster'
+import { getSyllableForCluster, generateBabble } from '../audio/babyPhonology'
 import type { ModelState, DevelopmentStage } from '../store/brainStore'
 
 // ── Developmental thresholds ──────────────────────────────────────────────────
@@ -188,23 +189,18 @@ export function processUtterance(
     Math.min(ab / pathMax, 1) * Math.min(totalBigrams / 400, 1),
   ]
 
-  // ── First word text ────────────────────────────────────────────────────────
-  // Stage-dependent babble → builds toward real word
+  // ── First word text (acoustically derived — not a static lookup) ────────────
+  // Syllables come from the centroid's actual acoustic position in the
+  // codebook, so they reflect what this specific user sounds like.
   const sortedClusters = [...clusterFreq]
     .map((c, i) => ({ c, i }))
     .sort((a, b) => b.c - a.c)
-  const top1 = sortedClusters[0].i
-  const top2 = sortedClusters[1].i
-  const syl1 = BABBLE_MAP[top1]
-  const syl2 = BABBLE_MAP[top2]
 
-  // Babble grows in complexity with developmental stage
-  const babble =
-    developmentStage === 0 ? `${syl1}…`                              // single syllable
-  : developmentStage === 1 ? `${syl1}… ${syl1}…`                    // reduplication
-  : developmentStage === 2 ? `${syl1}… ${syl1}… ${syl2}…`           // variegated
-  :                          `${syl1}… ${syl1}… ${syl2}… ${syl1}…`  // proto-word
+  const topSyllables = sortedClusters
+    .slice(0, 3)
+    .map(({ i }) => getSyllableForCluster(i, codebook, developmentStage))
 
+  const babble = generateBabble(topSyllables, developmentStage)
   const firstWord = model.firstWordSpoken ? model.firstWord : babble
 
   // ── Brain region activation levels ────────────────────────────────────────
@@ -262,7 +258,7 @@ export function getTopClusters(
   return model.clusterFreq
     .map((count, id) => ({
       id,
-      syllable: BABBLE_MAP[id],
+      syllable: getSyllableForCluster(id, model.codebook, model.developmentStage),
       count,
       recency: model.clusterRecency[id] ?? 0,
     }))
